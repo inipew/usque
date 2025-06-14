@@ -293,7 +293,34 @@ Example config:
   "id": "00000000-0000-0000-0000-000000000000",
   "access_token": "00000000-0000-0000-0000-000000000000",
   "ipv4": "172.16.0.2",
-  "ipv6": "2606:redacted:1"
+  "ipv6": "2606:redacted:1",
+  "socks": {
+    "bind_address": "0.0.0.0",
+    "port": "1080",
+    "username": "",
+    "password": ""
+  },
+  "http": {
+    "bind_address": "0.0.0.0",
+    "port": "8000",
+    "username": "",
+    "password": ""
+  },
+  "tunnel": {
+    "connect_port": 443,
+    "dns": ["9.9.9.9"],
+    "dns_timeout": "2s",
+    "use_ipv6": false,
+    "no_tunnel_ipv4": false,
+    "no_tunnel_ipv6": false,
+    "sni_address": "zt-masque.cloudflareclient.com",
+    "keepalive_period": "30s",
+    "mtu": 1280,
+    "initial_packet_size": 1242,
+    "reconnect_delay": "1s",
+    "connection_timeout": "30s",
+    "idle_timeout": "5m"
+  }
 }
 ```
 
@@ -308,6 +335,30 @@ Example config:
 - `access_token`: Access token given by the server to us upon registration/login. **Confidential.** This is used for API calls.
 - `ipv4`: Internal IPv4 address assigned to the device by the Cloudflare WARP network. **Public.** This is assigned to the device's interface and is also used for communication between devices in the [port forwarding mode](#port-forwarding-mode-for-advanced-users-cross-platform).
 - `ipv6`: Internal IPv6 address assigned to the device by the Cloudflare WARP network. **Public.** This is assigned to the device's interface and is also used for communication between devices in the [port forwarding mode](#port-forwarding-mode-for-advanced-users-cross-platform).
+- `socks`: Object describing the SOCKS proxy configuration.
+  - `bind_address`: Address to bind the SOCKS proxy to. **Public.** Optional.
+  - `port`: Port to listen on for the SOCKS proxy. **Public.** Optional.
+  - `username`: Username for SOCKS proxy authentication. **Confidential.** Optional.
+  - `password`: Password for SOCKS proxy authentication. **Confidential.** Optional.
+- `http`: Object describing the HTTP proxy configuration.
+  - `bind_address`: Address to bind the HTTP proxy to. **Public.** Optional.
+  - `port`: Port to listen on for the HTTP proxy. **Public.** Optional.
+  - `username`: Username for HTTP proxy authentication. **Confidential.** Optional.
+  - `password`: Password for HTTP proxy authentication. **Confidential.** Optional.
+- `tunnel`: MASQUE tunnel configuration.
+  - `connect_port`: Port used for the MASQUE connection.
+  - `dns`: List of DNS servers to use.
+  - `dns_timeout`: Timeout for DNS queries.
+  - `use_ipv6`: Use IPv6 for the MASQUE connection.
+  - `no_tunnel_ipv4`: Disable IPv4 inside the tunnel.
+  - `no_tunnel_ipv6`: Disable IPv6 inside the tunnel.
+  - `sni_address`: SNI address for MASQUE connection.
+  - `keepalive_period`: Keepalive period for the MASQUE connection.
+  - `mtu`: MTU for the MASQUE connection.
+  - `initial_packet_size`: Initial packet size for the MASQUE connection.
+  - `reconnect_delay`: Delay between reconnect attempts.
+  - `connection_timeout`: Timeout for establishing the MASQUE connection.
+  - `idle_timeout`: Idle timeout for the MASQUE connection.
 
 ## ZeroTrust support
 

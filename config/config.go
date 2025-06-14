@@ -8,19 +8,46 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
+	"time"
 )
 
 // Config represents the application configuration structure, containing essential details such as keys, endpoints, and access tokens.
+type ProxyServerConfig struct {
+	BindAddress string `json:"bind_address"` // Address to bind the proxy
+	Port        string `json:"port"`         // Port for the proxy
+	Username    string `json:"username"`     // Username for authentication
+	Password    string `json:"password"`     // Password for authentication
+}
+
+type TunnelConfig struct {
+	ConnectPort       int           `json:"connect_port"`        // MASQUE connection port
+	DNS               []string      `json:"dns"`                 // DNS servers for the tunnel
+	DNSTimeout        time.Duration `json:"dns_timeout"`         // Timeout for DNS queries
+	UseIPv6           bool          `json:"use_ipv6"`            // Use IPv6 for MASQUE connection
+	NoTunnelIPv4      bool          `json:"no_tunnel_ipv4"`      // Disable IPv4 inside the tunnel
+	NoTunnelIPv6      bool          `json:"no_tunnel_ipv6"`      // Disable IPv6 inside the tunnel
+	SNIAddress        string        `json:"sni_address"`         // SNI address for MASQUE connection
+	KeepalivePeriod   time.Duration `json:"keepalive_period"`    // Keepalive period for MASQUE connection
+	MTU               int           `json:"mtu"`                 // MTU for MASQUE connection
+	InitialPacketSize uint16        `json:"initial_packet_size"` // Initial packet size for MASQUE connection
+	ReconnectDelay    time.Duration `json:"reconnect_delay"`     // Delay between reconnect attempts
+	ConnectionTimeout time.Duration `json:"connection_timeout"`  // Timeout for establishing the connection
+	IdleTimeout       time.Duration `json:"idle_timeout"`        // Idle timeout for MASQUE connection
+}
+
 type Config struct {
-	PrivateKey     string `json:"private_key"`      // Base64-encoded ECDSA private key
-	EndpointV4     string `json:"endpoint_v4"`      // IPv4 address of the endpoint
-	EndpointV6     string `json:"endpoint_v6"`      // IPv6 address of the endpoint
-	EndpointPubKey string `json:"endpoint_pub_key"` // PEM-encoded ECDSA public key of the endpoint to verify against
-	License        string `json:"license"`          // Application license key
-	ID             string `json:"id"`               // Device unique identifier
-	AccessToken    string `json:"access_token"`     // Authentication token for API access
-	IPv4           string `json:"ipv4"`             // Assigned IPv4 address
-	IPv6           string `json:"ipv6"`             // Assigned IPv6 address
+	PrivateKey     string            `json:"private_key"`      // Base64-encoded ECDSA private key
+	EndpointV4     string            `json:"endpoint_v4"`      // IPv4 address of the endpoint
+	EndpointV6     string            `json:"endpoint_v6"`      // IPv6 address of the endpoint
+	EndpointPubKey string            `json:"endpoint_pub_key"` // PEM-encoded ECDSA public key of the endpoint to verify against
+	License        string            `json:"license"`          // Application license key
+	ID             string            `json:"id"`               // Device unique identifier
+	AccessToken    string            `json:"access_token"`     // Authentication token for API access
+	IPv4           string            `json:"ipv4"`             // Assigned IPv4 address
+	IPv6           string            `json:"ipv6"`             // Assigned IPv6 address
+	Socks          ProxyServerConfig `json:"socks"`            // SOCKS proxy configuration
+	HTTP           ProxyServerConfig `json:"http"`             // HTTP proxy configuration
+	Tunnel         TunnelConfig      `json:"tunnel"`           // MASQUE tunnel configuration
 }
 
 // AppConfig holds the global application configuration.

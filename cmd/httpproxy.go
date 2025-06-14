@@ -72,11 +72,24 @@ var httpProxyCmd = &cobra.Command{
 			cmd.Printf("Failed to get bind address: %v\n", err)
 			return
 		}
+		if config.ConfigLoaded && !cmd.Flags().Changed("bind") && config.AppConfig.HTTP.BindAddress != "" {
+			bindAddress = config.AppConfig.HTTP.BindAddress
+		}
 
 		port, err := cmd.Flags().GetString("port")
 		if err != nil {
 			cmd.Printf("Failed to get port: %v\n", err)
 			return
+		}
+		if config.ConfigLoaded && !cmd.Flags().Changed("port") && config.AppConfig.HTTP.Port != "" {
+			port = config.AppConfig.HTTP.Port
+		}
+
+		if config.ConfigLoaded && !cmd.Flags().Changed("username") && config.AppConfig.HTTP.Username != "" {
+			cmd.Flags().Set("username", config.AppConfig.HTTP.Username)
+		}
+		if config.ConfigLoaded && !cmd.Flags().Changed("password") && config.AppConfig.HTTP.Password != "" {
+			cmd.Flags().Set("password", config.AppConfig.HTTP.Password)
 		}
 
 		connectPort, err := cmd.Flags().GetInt("connect-port")
