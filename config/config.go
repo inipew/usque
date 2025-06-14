@@ -11,6 +11,41 @@ import (
 	"time"
 )
 
+// Duration is a wrapper around time.Duration that can unmarshal from either a
+// numeric value (nanoseconds) or a string such as "300ms".
+type Duration struct {
+	time.Duration
+}
+
+// UnmarshalJSON implements json.Unmarshaler. It accepts both string and
+// numeric representations of a duration.
+func (d *Duration) UnmarshalJSON(b []byte) error {
+	// Try unmarshalling into an integer first.
+	var n int64
+	if err := json.Unmarshal(b, &n); err == nil {
+		d.Duration = time.Duration(n)
+		return nil
+	}
+
+	// Fallback to a string based duration.
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return fmt.Errorf("invalid duration: %w", err)
+	}
+	dur, err := time.ParseDuration(s)
+	if err != nil {
+		return fmt.Errorf("invalid duration string: %w", err)
+	}
+	d.Duration = dur
+	return nil
+}
+
+// MarshalJSON implements json.Marshaler and outputs the duration as a string
+// representation.
+func (d Duration) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.Duration.String())
+}
+
 // Config represents the application configuration structure, containing essential details such as keys, endpoints, and access tokens.
 type ProxyServerConfig struct {
 	BindAddress string `json:"bind_address"` // Address to bind the proxy
@@ -20,19 +55,19 @@ type ProxyServerConfig struct {
 }
 
 type TunnelConfig struct {
-	ConnectPort       int           `json:"connect_port"`        // MASQUE connection port
-	DNS               []string      `json:"dns"`                 // DNS servers for the tunnel
-	DNSTimeout        time.Duration `json:"dns_timeout"`         // Timeout for DNS queries
-	UseIPv6           bool          `json:"use_ipv6"`            // Use IPv6 for MASQUE connection
-	NoTunnelIPv4      bool          `json:"no_tunnel_ipv4"`      // Disable IPv4 inside the tunnel
-	NoTunnelIPv6      bool          `json:"no_tunnel_ipv6"`      // Disable IPv6 inside the tunnel
-	SNIAddress        string        `json:"sni_address"`         // SNI address for MASQUE connection
-	KeepalivePeriod   time.Duration `json:"keepalive_period"`    // Keepalive period for MASQUE connection
-	MTU               int           `json:"mtu"`                 // MTU for MASQUE connection
-	InitialPacketSize uint16        `json:"initial_packet_size"` // Initial packet size for MASQUE connection
-	ReconnectDelay    time.Duration `json:"reconnect_delay"`     // Delay between reconnect attempts
-	ConnectionTimeout time.Duration `json:"connection_timeout"`  // Timeout for establishing the connection
-	IdleTimeout       time.Duration `json:"idle_timeout"`        // Idle timeout for MASQUE connection
+	ConnectPort       int      `json:"connect_port"`        // MASQUE connection port
+	DNS               []string `json:"dns"`                 // DNS servers for the tunnel
+	DNSTimeout        Duration `json:"dns_timeout"`         // Timeout for DNS queries
+	UseIPv6           bool     `json:"use_ipv6"`            // Use IPv6 for MASQUE connection
+	NoTunnelIPv4      bool     `json:"no_tunnel_ipv4"`      // Disable IPv4 inside the tunnel
+	NoTunnelIPv6      bool     `json:"no_tunnel_ipv6"`      // Disable IPv6 inside the tunnel
+	SNIAddress        string   `json:"sni_address"`         // SNI address for MASQUE connection
+	KeepalivePeriod   Duration `json:"keepalive_period"`    // Keepalive period for MASQUE connection
+	MTU               int      `json:"mtu"`                 // MTU for MASQUE connection
+	InitialPacketSize uint16   `json:"initial_packet_size"` // Initial packet size for MASQUE connection
+	ReconnectDelay    Duration `json:"reconnect_delay"`     // Delay between reconnect attempts
+	ConnectionTimeout Duration `json:"connection_timeout"`  // Timeout for establishing the connection
+	IdleTimeout       Duration `json:"idle_timeout"`        // Idle timeout for MASQUE connection
 }
 
 type Config struct {

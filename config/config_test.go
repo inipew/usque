@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -33,17 +34,17 @@ func TestSaveAndLoadConfig(t *testing.T) {
 		Tunnel: TunnelConfig{
 			ConnectPort:       443,
 			DNS:               []string{"1.1.1.1"},
-			DNSTimeout:        2 * time.Second,
+			DNSTimeout:        Duration{2 * time.Second},
 			UseIPv6:           true,
 			NoTunnelIPv4:      false,
 			NoTunnelIPv6:      true,
 			SNIAddress:        "example.com",
-			KeepalivePeriod:   30 * time.Second,
+			KeepalivePeriod:   Duration{30 * time.Second},
 			MTU:               1280,
 			InitialPacketSize: 1242,
-			ReconnectDelay:    time.Second,
-			ConnectionTimeout: 20 * time.Second,
-			IdleTimeout:       5 * time.Minute,
+			ReconnectDelay:    Duration{time.Second},
+			ConnectionTimeout: Duration{20 * time.Second},
+			IdleTimeout:       Duration{5 * time.Minute},
 		},
 	}
 
@@ -66,5 +67,33 @@ func TestSaveAndLoadConfig(t *testing.T) {
 
 	if !reflect.DeepEqual(AppConfig, expected) {
 		t.Fatalf("Loaded config does not match expected")
+	}
+}
+
+func TestLoadConfigDurationStrings(t *testing.T) {
+	// Create a temporary configuration file with string based durations.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "dur.json")
+	data := []byte(`{
+                "tunnel": {
+                        "dns_timeout": "3s",
+                        "idle_timeout": "1m"
+                }
+        }`)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatalf("failed to write temp config: %v", err)
+	}
+
+	AppConfig = Config{}
+	ConfigLoaded = false
+	if err := LoadConfig(path); err != nil {
+		t.Fatalf("LoadConfig failed: %v", err)
+	}
+
+	if AppConfig.Tunnel.DNSTimeout.Duration != 3*time.Second {
+		t.Fatalf("DNSTimeout mismatch: got %v", AppConfig.Tunnel.DNSTimeout)
+	}
+	if AppConfig.Tunnel.IdleTimeout.Duration != time.Minute {
+		t.Fatalf("IdleTimeout mismatch: got %v", AppConfig.Tunnel.IdleTimeout)
 	}
 }
