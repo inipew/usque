@@ -103,6 +103,8 @@ Flags:
 Use "usque [command] --help" for more information about a command.
 ```
 
+If the configuration enables any of the proxies (`socks.enabled` or `http.enabled`), running `usque` without a subcommand will start them automatically.
+
 Before doing anything, you need to *register*.
 
 ### Registration
@@ -295,12 +297,14 @@ Example config:
   "ipv4": "172.16.0.2",
   "ipv6": "2606:redacted:1",
   "socks": {
+    "enabled": true,
     "bind_address": "0.0.0.0",
     "port": "1080",
     "username": "",
     "password": ""
   },
   "http": {
+    "enabled": false,
     "bind_address": "0.0.0.0",
     "port": "8000",
     "username": "",
@@ -336,11 +340,13 @@ Example config:
 - `ipv4`: Internal IPv4 address assigned to the device by the Cloudflare WARP network. **Public.** This is assigned to the device's interface and is also used for communication between devices in the [port forwarding mode](#port-forwarding-mode-for-advanced-users-cross-platform).
 - `ipv6`: Internal IPv6 address assigned to the device by the Cloudflare WARP network. **Public.** This is assigned to the device's interface and is also used for communication between devices in the [port forwarding mode](#port-forwarding-mode-for-advanced-users-cross-platform).
 - `socks`: Object describing the SOCKS proxy configuration.
+  - `enabled`: Start the SOCKS proxy automatically when running `usque` without subcommands. **Optional.**
   - `bind_address`: Address to bind the SOCKS proxy to. **Public.** Optional.
   - `port`: Port to listen on for the SOCKS proxy. **Public.** Optional.
   - `username`: Username for SOCKS proxy authentication. **Confidential.** Optional.
   - `password`: Password for SOCKS proxy authentication. **Confidential.** Optional.
 - `http`: Object describing the HTTP proxy configuration.
+  - `enabled`: Start the HTTP proxy automatically when running `usque` without subcommands. **Optional.**
   - `bind_address`: Address to bind the HTTP proxy to. **Public.** Optional.
   - `port`: Port to listen on for the HTTP proxy. **Public.** Optional.
   - `username`: Username for HTTP proxy authentication. **Confidential.** Optional.

@@ -24,12 +24,14 @@ func TestSaveAndLoadConfig(t *testing.T) {
 			Port:        "1080",
 			Username:    "user",
 			Password:    "pass",
+			Enabled:     true,
 		},
 		HTTP: ProxyServerConfig{
 			BindAddress: "0.0.0.0",
 			Port:        "8000",
 			Username:    "huser",
 			Password:    "hpass",
+			Enabled:     false,
 		},
 		Tunnel: TunnelConfig{
 			ConnectPort:       443,
