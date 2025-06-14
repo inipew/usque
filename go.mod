@@ -10,6 +10,7 @@ require (
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/spf13/cobra v1.9.1
 	github.com/things-go/go-socks5 v0.0.6
+	github.com/txthinking/socks5 v0.0.0-20230325130024-4230056ae301
 	github.com/vishvananda/netlink v1.3.1-0.20250209162617-655392bc778a
 	github.com/yosida95/uritemplate/v3 v3.0.2
 	golang.zx2c4.com/wireguard v0.0.0-20231211153847-12269c276173
@@ -22,8 +23,10 @@ require (
 	github.com/google/pprof v0.0.0-20250501235452-c0086092b71a // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/onsi/ginkgo/v2 v2.23.4 // indirect
+	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/txthinking/runnergroup v0.0.0-20210608031112-152c7c4432bf // indirect
 	github.com/vishvananda/netns v0.0.5 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/mock v0.5.2 // indirect

@@ -300,6 +300,7 @@ Example config:
     "enabled": true,
     "bind_address": "0.0.0.0",
     "port": "1080",
+    "implementation": "default",
     "username": "",
     "password": ""
   },
@@ -343,6 +344,7 @@ Example config:
   - `enabled`: Start the SOCKS proxy automatically when running `usque` without subcommands. **Optional.**
   - `bind_address`: Address to bind the SOCKS proxy to. **Public.** Optional.
   - `port`: Port to listen on for the SOCKS proxy. **Public.** Optional.
+  - `implementation`: SOCKS server implementation. Either `default` or `txthinking`.
   - `username`: Username for SOCKS proxy authentication. **Confidential.** Optional.
   - `password`: Password for SOCKS proxy authentication. **Confidential.** Optional.
 - `http`: Object describing the HTTP proxy configuration.
