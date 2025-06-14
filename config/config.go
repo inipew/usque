@@ -52,6 +52,7 @@ type ProxyServerConfig struct {
 	Port        string `json:"port"`         // Port for the proxy
 	Username    string `json:"username"`     // Username for authentication
 	Password    string `json:"password"`     // Password for authentication
+	Enabled     bool   `json:"enabled"`      // Whether the proxy should run automatically
 }
 
 type TunnelConfig struct {

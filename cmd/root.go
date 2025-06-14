@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"log"
+	"sync"
 
 	"github.com/Diniboy1123/usque/config"
 	"github.com/spf13/cobra"
@@ -23,6 +24,40 @@ var rootCmd = &cobra.Command{
 				log.Printf("You may only use the register command to generate one.")
 			}
 		}
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		if !config.ConfigLoaded {
+			cmd.Println("Config not loaded. Please register first.")
+			return
+		}
+
+		var wg sync.WaitGroup
+		var started bool
+
+		if config.AppConfig.Socks.Enabled {
+			wg.Add(1)
+			started = true
+			go func() {
+				defer wg.Done()
+				socksCmd.Run(socksCmd, []string{})
+			}()
+		}
+
+		if config.AppConfig.HTTP.Enabled {
+			wg.Add(1)
+			started = true
+			go func() {
+				defer wg.Done()
+				httpProxyCmd.Run(httpProxyCmd, []string{})
+			}()
+		}
+
+		if !started {
+			cmd.Println("No services enabled in config")
+			return
+		}
+
+		wg.Wait()
 	},
 }
 
