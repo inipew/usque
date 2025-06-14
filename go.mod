@@ -7,13 +7,16 @@ toolchain go1.24.2
 require (
 	github.com/Diniboy1123/connect-ip-go v0.0.0-20250220203317-efdce8f43409
 	github.com/quic-go/quic-go v0.51.0
+	github.com/rs/zerolog v1.34.0
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/spf13/cobra v1.9.1
-	github.com/things-go/go-socks5 v0.0.6
+	github.com/things-go/go-socks5 v0.0.0-20250613162937-a30fe42bc9f2
 	github.com/vishvananda/netlink v1.3.1-0.20250209162617-655392bc778a
 	github.com/yosida95/uritemplate/v3 v3.0.2
 	golang.zx2c4.com/wireguard v0.0.0-20231211153847-12269c276173
 )
+
+replace github.com/things-go/go-socks5 => github.com/inipew/go-socks5 v0.0.0-20250613162937-a30fe42bc9f2
 
 require (
 	github.com/dunglas/httpsfv v1.1.0 // indirect
@@ -21,6 +24,8 @@ require (
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/pprof v0.0.0-20250501235452-c0086092b71a // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/onsi/ginkgo/v2 v2.23.4 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect

@@ -8,11 +8,16 @@ import (
 	"os"
 	"time"
 
+	"github.com/rs/zerolog"
+	"github.com/things-go/go-socks5"
+	"github.com/things-go/go-socks5/auth"
+	"github.com/things-go/go-socks5/bufferpool"
+	socks5resolver "github.com/things-go/go-socks5/resolver"
+
 	"github.com/Diniboy1123/usque/api"
 	"github.com/Diniboy1123/usque/config"
 	"github.com/Diniboy1123/usque/internal"
 	"github.com/spf13/cobra"
-	"github.com/things-go/go-socks5"
 	"golang.zx2c4.com/wireguard/tun/netstack"
 )
 
@@ -192,6 +197,33 @@ var socksCmd = &cobra.Command{
 			return
 		}
 
+		tcpBuf, err := cmd.Flags().GetInt("tcp-buf")
+		if err != nil {
+			cmd.Printf("Failed to get tcp-buf: %v\n", err)
+			return
+		}
+		udpBuf, err := cmd.Flags().GetInt("udp-buf")
+		if err != nil {
+			cmd.Printf("Failed to get udp-buf: %v\n", err)
+			return
+		}
+		timeout, err := cmd.Flags().GetDuration("timeout")
+		if err != nil {
+			cmd.Printf("Failed to get timeout: %v\n", err)
+			return
+		}
+		if config.ConfigLoaded {
+			if !cmd.Flags().Changed("tcp-buf") && config.AppConfig.Socks.TCPBuf != 0 {
+				tcpBuf = config.AppConfig.Socks.TCPBuf
+			}
+			if !cmd.Flags().Changed("udp-buf") && config.AppConfig.Socks.UDPBuf != 0 {
+				udpBuf = config.AppConfig.Socks.UDPBuf
+			}
+			if !cmd.Flags().Changed("timeout") && config.AppConfig.Socks.Timeout.Duration != 0 {
+				timeout = config.AppConfig.Socks.Timeout.Duration
+			}
+		}
+
 		tunDev, tunNet, err := netstack.CreateNetTUN(localAddresses, dnsAddrs, mtu)
 		if err != nil {
 			cmd.Printf("Failed to create virtual TUN device: %v\n", err)
@@ -201,40 +233,46 @@ var socksCmd = &cobra.Command{
 
 		go api.MaintainTunnel(context.Background(), tlsConfig, keepalivePeriod, initialPacketSize, endpoint, api.NewNetstackAdapter(tunDev), mtu, reconnectDelay)
 
-		var resolver socks5.NameResolver
+		var resolver socks5resolver.NameResolver
 		if localDNS {
 			resolver = internal.TunnelDNSResolver{TunNet: nil, DNSAddrs: dnsAddrs, Timeout: dnsTimeout}
 		} else {
 			resolver = internal.TunnelDNSResolver{TunNet: tunNet, DNSAddrs: dnsAddrs, Timeout: dnsTimeout}
 		}
 
-		var server *socks5.Server
-		if username == "" || password == "" {
-			server = socks5.NewServer(
-				socks5.WithLogger(socks5.NewLogger(log.New(os.Stdout, "socks5: ", log.LstdFlags))),
-				socks5.WithDial(func(ctx context.Context, network, addr string) (net.Conn, error) {
-					return tunNet.DialContext(ctx, network, addr)
-				}),
-				socks5.WithResolver(resolver),
-			)
-		} else {
-			server = socks5.NewServer(
-				socks5.WithLogger(socks5.NewLogger(log.New(os.Stdout, "socks5: ", log.LstdFlags))),
-				socks5.WithDial(func(ctx context.Context, network, addr string) (net.Conn, error) {
-					return tunNet.DialContext(ctx, network, addr)
-				}),
-				socks5.WithResolver(resolver),
-				socks5.WithAuthMethods(
-					[]socks5.Authenticator{
-						socks5.UserPassAuthenticator{
-							Credentials: socks5.StaticCredentials{
-								username: password,
-							},
-						},
-					},
-				),
-			)
+		logger := zerolog.New(os.Stdout)
+		dial := func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return tunNet.DialContext(ctx, network, addr)
 		}
+
+		opts := []socks5.Option{
+			socks5.WithLogger(socks5.NewLogger(logger)),
+			socks5.WithDial(dial),
+			socks5.WithResolver(resolver),
+		}
+		if tcpBuf > 0 && udpBuf > 0 && tcpBuf == udpBuf {
+			opts = append(opts, socks5.WithBufferPool(bufferpool.NewPool(tcpBuf)))
+		} else {
+			if tcpBuf > 0 {
+				opts = append(opts, socks5.WithBufferPoolTCP(bufferpool.NewPool(tcpBuf)))
+			}
+			if udpBuf > 0 {
+				opts = append(opts, socks5.WithBufferPoolUDP(bufferpool.NewPool(udpBuf)))
+			}
+		}
+		if timeout > 0 {
+			opts = append(opts, socks5.WithTimeout(timeout))
+		}
+		if username != "" && password != "" {
+			opts = append(opts, socks5.WithAuthMethods([]auth.Authenticator{
+				auth.UserPassAuthenticator{
+					Credentials: auth.StaticCredentials{
+						username: password,
+					},
+				},
+			}))
+		}
+		server := socks5.NewServer(opts...)
 
 		log.Printf("SOCKS proxy listening on %s:%s", bindAddress, port)
 		if err := server.ListenAndServe("tcp", net.JoinHostPort(bindAddress, port)); err != nil {
@@ -261,5 +299,8 @@ func init() {
 	socksCmd.Flags().Uint16P("initial-packet-size", "i", 1242, "Initial packet size for MASQUE connection")
 	socksCmd.Flags().DurationP("reconnect-delay", "r", 1*time.Second, "Delay between reconnect attempts")
 	socksCmd.Flags().BoolP("local-dns", "l", false, "Don't use the tunnel for DNS queries")
+	socksCmd.Flags().Int("tcp-buf", 0, "TCP read/write buffer size")
+	socksCmd.Flags().Int("udp-buf", 0, "UDP read/write buffer size")
+	socksCmd.Flags().Duration("timeout", 0, "Connection timeout for proxy dials")
 	rootCmd.AddCommand(socksCmd)
 }

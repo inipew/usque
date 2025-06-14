@@ -25,6 +25,9 @@ func TestSaveAndLoadConfig(t *testing.T) {
 			Username:    "user",
 			Password:    "pass",
 			Enabled:     true,
+			TCPBuf:      0,
+			UDPBuf:      0,
+			Timeout:     Duration{},
 		},
 		HTTP: ProxyServerConfig{
 			BindAddress: "0.0.0.0",
@@ -32,6 +35,9 @@ func TestSaveAndLoadConfig(t *testing.T) {
 			Username:    "huser",
 			Password:    "hpass",
 			Enabled:     false,
+			TCPBuf:      0,
+			UDPBuf:      0,
+			Timeout:     Duration{},
 		},
 		Tunnel: TunnelConfig{
 			ConnectPort:       443,

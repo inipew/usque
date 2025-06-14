@@ -500,7 +500,7 @@ This tool wouldn't exist without the following incredible projects. Please go an
 - [frida-interception-and-unpinning](https://github.com/httptoolkit/frida-interception-and-unpinning/tree/4d477da) - Very good at unpinning cert. pinning, so I could explore how API calls were made by the app.
 - [friTap](https://github.com/fkie-cad/friTap) - For being an exceptionally well written and easy to use Frida script that one can use to dump TLS secrets effortlessly.
 - [Go](https://go.dev/) - The Go programming language. I am not a professional developer, but I was able to get this working with Go. It is a great language.
-- [go-socks5](github.com/things-go/go-socks5) - A great SOCKS5 library for Go. Used for the SOCKS5 proxy mode. Taught me a lot about the SOCKS protocol.
+ - [go-socks5](github.com/inipew/go-socks5) - A great SOCKS5 library for Go. Used for the SOCKS5 proxy mode. Taught me a lot about the SOCKS protocol.
 - [gvisor](https://gvisor.dev/) - Gvisor is a great tool for running untrusted code in a safe environment. They also implement a complete network stack in userspace. This makes it possible for all proxy modes to run without root and cross-platform.
 - [IDA Free](https://hex-rays.com/ida-free) - Great stuff for dealing with rust binaries. Helped a lot with understanding the official client.
 - [JADX-GUI](https://github.com/skylot/jadx) - Great stuff for dealing with Android APKs. Helped a lot with understanding the official client.

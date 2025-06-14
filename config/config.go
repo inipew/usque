@@ -48,11 +48,14 @@ func (d Duration) MarshalJSON() ([]byte, error) {
 
 // Config represents the application configuration structure, containing essential details such as keys, endpoints, and access tokens.
 type ProxyServerConfig struct {
-	BindAddress string `json:"bind_address"` // Address to bind the proxy
-	Port        string `json:"port"`         // Port for the proxy
-	Username    string `json:"username"`     // Username for authentication
-	Password    string `json:"password"`     // Password for authentication
-	Enabled     bool   `json:"enabled"`      // Whether the proxy should run automatically
+	BindAddress string   `json:"bind_address"` // Address to bind the proxy
+	Port        string   `json:"port"`         // Port for the proxy
+	Username    string   `json:"username"`     // Username for authentication
+	Password    string   `json:"password"`     // Password for authentication
+	Enabled     bool     `json:"enabled"`      // Whether the proxy should run automatically
+	TCPBuf      int      `json:"tcp_buf"`      // TCP read/write buffer size
+	UDPBuf      int      `json:"udp_buf"`      // UDP read/write buffer size
+	Timeout     Duration `json:"timeout"`      // Connection timeout
 }
 
 type TunnelConfig struct {
