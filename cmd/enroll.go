@@ -125,6 +125,9 @@ var enrollCmd = &cobra.Command{
 			AccessToken:    accountData.Token,
 			IPv4:           updatedAccountData.Config.Interface.Addresses.V4,
 			IPv6:           updatedAccountData.Config.Interface.Addresses.V6,
+			Socks:          config.ProxyServerConfig{},
+			HTTP:           config.ProxyServerConfig{},
+			Tunnel:         config.TunnelConfig{},
 		}
 
 		config.AppConfig.SaveConfig(configPath)

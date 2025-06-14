@@ -71,11 +71,24 @@ var socksCmd = &cobra.Command{
 			cmd.Printf("Failed to get bind address: %v\n", err)
 			return
 		}
+		if config.ConfigLoaded && !cmd.Flags().Changed("bind") && config.AppConfig.Socks.BindAddress != "" {
+			bindAddress = config.AppConfig.Socks.BindAddress
+		}
 
 		port, err := cmd.Flags().GetString("port")
 		if err != nil {
 			cmd.Printf("Failed to get port: %v\n", err)
 			return
+		}
+		if config.ConfigLoaded && !cmd.Flags().Changed("port") && config.AppConfig.Socks.Port != "" {
+			port = config.AppConfig.Socks.Port
+		}
+
+		if config.ConfigLoaded && !cmd.Flags().Changed("username") && config.AppConfig.Socks.Username != "" {
+			cmd.Flags().Set("username", config.AppConfig.Socks.Username)
+		}
+		if config.ConfigLoaded && !cmd.Flags().Changed("password") && config.AppConfig.Socks.Password != "" {
+			cmd.Flags().Set("password", config.AppConfig.Socks.Password)
 		}
 
 		connectPort, err := cmd.Flags().GetInt("connect-port")
