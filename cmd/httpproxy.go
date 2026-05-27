@@ -14,7 +14,7 @@ import (
 	"github.com/Diniboy1123/usque/config"
 	"github.com/Diniboy1123/usque/internal"
 	"github.com/spf13/cobra"
-	"golang.zx2c4.com/wireguard/tun/netstack"
+	"github.com/Diniboy1123/usque/internal/netstack"
 )
 
 var httpProxyCmd = &cobra.Command{
@@ -201,6 +201,38 @@ var httpProxyCmd = &cobra.Command{
 		}
 		if p, err := cmd.Flags().GetString("password"); err == nil && p != "" {
 			password = p
+		}
+
+		// Merge HTTPProxy config defaults from config.json if defined
+		if config.AppConfig.HTTPProxy.Bind != "" && !cmd.Flags().Changed("bind") {
+			bindAddress = config.AppConfig.HTTPProxy.Bind
+		}
+		if config.AppConfig.HTTPProxy.Port != "" && !cmd.Flags().Changed("port") {
+			port = config.AppConfig.HTTPProxy.Port
+		}
+		if config.AppConfig.HTTPProxy.Username != "" && !cmd.Flags().Changed("username") {
+			username = config.AppConfig.HTTPProxy.Username
+		}
+		if config.AppConfig.HTTPProxy.Password != "" && !cmd.Flags().Changed("password") {
+			password = config.AppConfig.HTTPProxy.Password
+		}
+		if len(config.AppConfig.HTTPProxy.DNS) > 0 && !cmd.Flags().Changed("dns") {
+			dnsServers = config.AppConfig.HTTPProxy.DNS
+			dnsAddrs = nil
+			for _, dns := range dnsServers {
+				addr, err := netip.ParseAddr(dns)
+				if err != nil {
+					cmd.Printf("Failed to parse DNS server from config.json: %v\n", err)
+					return
+				}
+				dnsAddrs = append(dnsAddrs, addr)
+			}
+		}
+		if config.AppConfig.HTTPProxy.LocalDNS && !cmd.Flags().Changed("local-dns") {
+			localDNS = true
+			if systemDNS && !localDNS {
+				systemDNS = false
+			}
 		}
 
 		reconnectDelay, err := cmd.Flags().GetDuration("reconnect-delay")

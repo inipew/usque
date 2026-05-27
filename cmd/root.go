@@ -22,8 +22,29 @@ var rootCmd = &cobra.Command{
 			if err := config.LoadConfig(configPath); err != nil {
 				log.Printf("Config file not found: %v", err)
 				log.Printf("You may only use the register command to generate one.")
+			} else {
+				// Initialize file logging if configured and enabled
+				if config.AppConfig.Log.Enable {
+					if err := internal.SetupLogging(config.AppConfig.Log.FilePath); err != nil {
+						log.Printf("Failed to setup logging: %v", err)
+					}
+				}
 			}
 		}
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		if !config.ConfigLoaded {
+			_ = cmd.Help()
+			return
+		}
+
+		anyEnabled := config.AppConfig.Socks.Enable || config.AppConfig.HTTPProxy.Enable || config.AppConfig.TransparentTun.Enable
+		if !anyEnabled {
+			_ = cmd.Help()
+			return
+		}
+
+		runDaemon()
 	},
 }
 

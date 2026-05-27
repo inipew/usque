@@ -7,7 +7,7 @@ import (
 	"net/netip"
 	"time"
 
-	"golang.zx2c4.com/wireguard/tun/netstack"
+	"github.com/Diniboy1123/usque/internal/netstack"
 )
 
 // TunnelDNSResolver implements a DNS resolver that uses the provided DNS servers

@@ -10,6 +10,44 @@ import (
 	"os"
 )
 
+type SocksConfig struct {
+	Enable   bool     `json:"enable"`
+	Bind     string   `json:"bind"`
+	Port     string   `json:"port"`
+	Username string   `json:"username"`
+	Password string   `json:"password"`
+	DNS      []string `json:"dns"`
+	LocalDNS bool     `json:"local_dns"`
+}
+
+type HTTPProxyConfig struct {
+	Enable   bool     `json:"enable"`
+	Bind     string   `json:"bind"`
+	Port     string   `json:"port"`
+	Username string   `json:"username"`
+	Password string   `json:"password"`
+	DNS      []string `json:"dns"`
+	LocalDNS bool     `json:"local_dns"`
+}
+
+type PortFwConfig struct {
+	LocalPorts  []string `json:"local_ports"`
+	RemotePorts []string `json:"remote_ports"`
+}
+
+type TransparentTunConfig struct {
+	Enable        bool   `json:"enable"`
+	InterfaceName string `json:"interface_name"`
+	AutoRoute     bool   `json:"auto_route"`
+	StrictRoute   bool   `json:"strict_route"`
+}
+
+type LogConfig struct {
+	Enable   bool   `json:"enable"`
+	FilePath string `json:"file_path"`
+	Level    string `json:"level"`
+}
+
 // Config represents the application configuration structure, containing essential details such as keys, endpoints, and access tokens.
 type Config struct {
 	PrivateKey     string `json:"private_key"`      // Base64-encoded ECDSA private key
@@ -23,6 +61,13 @@ type Config struct {
 	AccessToken    string `json:"access_token"`     // Authentication token for API access
 	IPv4           string `json:"ipv4"`             // Assigned IPv4 address
 	IPv6           string `json:"ipv6"`             // Assigned IPv6 address
+
+	// Expanded configuration sections
+	Socks          SocksConfig          `json:"socks"`
+	HTTPProxy      HTTPProxyConfig      `json:"http_proxy"`
+	PortForward    PortFwConfig         `json:"port_forward"`
+	TransparentTun TransparentTunConfig `json:"transparent_tun"`
+	Log            LogConfig            `json:"log"`
 }
 
 // AppConfig holds the global application configuration.

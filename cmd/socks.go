@@ -5,14 +5,13 @@ import (
 	"log"
 	"net"
 	"net/netip"
-	"os"
 	"time"
 
 	"github.com/Diniboy1123/usque/api"
 	"github.com/Diniboy1123/usque/config"
 	"github.com/Diniboy1123/usque/internal"
 	"github.com/spf13/cobra"
-	"golang.zx2c4.com/wireguard/tun/netstack"
+	"github.com/Diniboy1123/usque/internal/netstack"
 )
 
 var socksCmd = &cobra.Command{
@@ -201,6 +200,38 @@ var socksCmd = &cobra.Command{
 			password = p
 		}
 
+		// Merge SOCKS config defaults from config.json if defined
+		if config.AppConfig.Socks.Bind != "" && !cmd.Flags().Changed("bind") {
+			bindAddress = config.AppConfig.Socks.Bind
+		}
+		if config.AppConfig.Socks.Port != "" && !cmd.Flags().Changed("port") {
+			port = config.AppConfig.Socks.Port
+		}
+		if config.AppConfig.Socks.Username != "" && !cmd.Flags().Changed("username") {
+			username = config.AppConfig.Socks.Username
+		}
+		if config.AppConfig.Socks.Password != "" && !cmd.Flags().Changed("password") {
+			password = config.AppConfig.Socks.Password
+		}
+		if len(config.AppConfig.Socks.DNS) > 0 && !cmd.Flags().Changed("dns") {
+			dnsServers = config.AppConfig.Socks.DNS
+			dnsAddrs = nil
+			for _, dns := range dnsServers {
+				addr, err := netip.ParseAddr(dns)
+				if err != nil {
+					cmd.Printf("Failed to parse DNS server from config.json: %v\n", err)
+					return
+				}
+				dnsAddrs = append(dnsAddrs, addr)
+			}
+		}
+		if config.AppConfig.Socks.LocalDNS && !cmd.Flags().Changed("local-dns") {
+			localDNS = true
+			if systemDNS && !localDNS {
+				systemDNS = false
+			}
+		}
+
 		reconnectDelay, err := cmd.Flags().GetDuration("reconnect-delay")
 		if err != nil {
 			cmd.Printf("Failed to get reconnect delay: %v\n", err)
@@ -278,7 +309,7 @@ var socksCmd = &cobra.Command{
 			Resolver:   resolver,
 			TunNet:     tunNet,
 			UDPTimeout: udpTimeout,
-			Logger:     log.New(internal.NewTZStampWriter(os.Stderr), "socks5: ", 0),
+			Logger:     log.New(internal.NewTZStampWriter(internal.GetLogWriter()), "socks5: ", 0),
 		})
 		if err != nil {
 			cmd.Printf("Failed to create SOCKS proxy: %v\n", err)

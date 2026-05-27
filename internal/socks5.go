@@ -13,7 +13,7 @@ import (
 
 	"github.com/txthinking/runnergroup"
 	"github.com/txthinking/socks5"
-	"golang.zx2c4.com/wireguard/tun/netstack"
+	"github.com/Diniboy1123/usque/internal/netstack"
 )
 
 // SOCKS5Config holds listen address, auth, tunnel dialers, and timeouts for [SOCKS5Server].

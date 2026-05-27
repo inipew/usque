@@ -2,13 +2,14 @@ package internal
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"sync"
 	"time"
 
-	gvisorlog "gvisor.dev/gvisor/pkg/log"
+	gvisorlog "github.com/sagernet/gvisor/pkg/log"
 )
 
 // tzStampWriter wraps an io.Writer and prepends each record with a
@@ -50,6 +51,41 @@ func NewTZStampWriter(w io.Writer) io.Writer {
 	return &tzStampWriter{w: w}
 }
 
+var (
+	logWriter io.Writer = os.Stderr
+	logMu     sync.Mutex
+)
+
+// GetLogWriter returns the currently configured log writer (e.g., stderr or a multi-writer with a file).
+func GetLogWriter() io.Writer {
+	logMu.Lock()
+	defer logMu.Unlock()
+	return logWriter
+}
+
+// SetupLogging configures both standard logging and gVisor logging to write only to the given file (and not to the terminal/stderr), falling back to stderr if no file is configured.
+func SetupLogging(filePath string) error {
+	logMu.Lock()
+	defer logMu.Unlock()
+
+	var w io.Writer = os.Stderr
+	if filePath != "" {
+		f, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			return fmt.Errorf("failed to open log file %q: %v", filePath, err)
+		}
+		w = f
+	}
+	logWriter = w
+
+	log.SetFlags(0)
+	log.SetPrefix("")
+	tzWriter := NewTZStampWriter(w)
+	log.SetOutput(tzWriter)
+	gvisorlog.SetTarget(&gvisorlog.Writer{Next: tzWriter})
+	return nil
+}
+
 // InstallDefaultLogTZStamp rewires the stdlib default logger so every
 // record is prefixed with "YYYY/MM/DD HH:MM:SS <TZ> ", regardless of
 // whether the host has zoneinfo available. This addresses log lines
@@ -62,7 +98,7 @@ func NewTZStampWriter(w io.Writer) io.Writer {
 func InstallDefaultLogTZStamp() {
 	log.SetFlags(0)
 	log.SetPrefix("")
-	w := NewTZStampWriter(os.Stderr)
+	w := NewTZStampWriter(GetLogWriter())
 	log.SetOutput(w)
 	gvisorlog.SetTarget(&gvisorlog.Writer{Next: w})
 }

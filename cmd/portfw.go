@@ -14,7 +14,7 @@ import (
 	"github.com/Diniboy1123/usque/config"
 	"github.com/Diniboy1123/usque/internal"
 	"github.com/spf13/cobra"
-	"golang.zx2c4.com/wireguard/tun/netstack"
+	"github.com/Diniboy1123/usque/internal/netstack"
 )
 
 var portFwCmd = &cobra.Command{
@@ -172,6 +172,14 @@ var portFwCmd = &cobra.Command{
 		if err != nil {
 			cmd.Printf("Failed to get remote ports: %v\n", err)
 			return
+		}
+
+		// Merge PortForward config defaults from config.json if defined
+		if len(config.AppConfig.PortForward.LocalPorts) > 0 && !cmd.Flags().Changed("local-ports") {
+			localPorts = config.AppConfig.PortForward.LocalPorts
+		}
+		if len(config.AppConfig.PortForward.RemotePorts) > 0 && !cmd.Flags().Changed("remote-ports") {
+			remotePorts = config.AppConfig.PortForward.RemotePorts
 		}
 
 		var localPortMappings []internal.PortMapping
