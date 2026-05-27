@@ -29,6 +29,9 @@ var rootCmd = &cobra.Command{
 						log.Printf("Failed to setup logging: %v", err)
 					}
 				}
+				if config.AppConfig.Log.Level != "" {
+					internal.SetLogLevel(internal.ParseLevel(config.AppConfig.Log.Level))
+				}
 			}
 		}
 	},

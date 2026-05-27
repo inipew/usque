@@ -182,7 +182,7 @@ func startDaemonSocks(ctx context.Context, sCfg config.SocksConfig, tunNet *nets
 		Resolver:   resolver,
 		TunNet:     tunNet,
 		UDPTimeout: 60 * time.Second,
-		Logger:     log.New(internal.NewTZStampWriter(internal.GetLogWriter()), "socks5: ", 0),
+		Logger:     internal.NewLogger("socks5"),
 	})
 	if err != nil {
 		return err

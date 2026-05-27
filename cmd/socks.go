@@ -310,7 +310,7 @@ var socksCmd = &cobra.Command{
 			Resolver:   resolver,
 			TunNet:     tunNet,
 			UDPTimeout: udpTimeout,
-			Logger:     log.New(internal.NewTZStampWriter(internal.GetLogWriter()), "socks5: ", 0),
+			Logger:     internal.NewLogger("socks5"),
 		})
 		if err != nil {
 			cmd.Printf("Failed to create SOCKS proxy: %v\n", err)

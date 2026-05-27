@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/sagernet/sing/common/auth"
 	"github.com/sagernet/sing/common/buf"
 	E "github.com/sagernet/sing/common/exceptions"
+	"github.com/sagernet/sing/common/logger"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
 	"github.com/sagernet/sing/protocol/socks"
@@ -27,7 +27,7 @@ type SOCKS5Config struct {
 	TunNet     *netstack.Net
 	TCPTimeout time.Duration // 0 = no deadline on TCP CONNECT relay
 	UDPTimeout time.Duration // 0 = no deadline on remote UDP reads
-	Logger     *log.Logger
+	Logger     logger.ContextLogger
 }
 
 // SOCKS5Server wraps SagerNet SOCKS5 protocol handler.
@@ -41,7 +41,7 @@ func NewSOCKS5Server(cfg SOCKS5Config) (*SOCKS5Server, error) {
 		return nil, fmt.Errorf("socks5: TunNet is required")
 	}
 	if cfg.Logger == nil {
-		cfg.Logger = log.Default()
+		cfg.Logger = NewLogger("socks5")
 	}
 	return &SOCKS5Server{cfg: cfg}, nil
 }
@@ -54,18 +54,21 @@ func (s *socksPacketListener) ListenPacket(listenConfig net.ListenConfig, ctx co
 
 type socksHandler struct {
 	tunNet *netstack.Net
-	logger *log.Logger
+	logger logger.ContextLogger
 }
 
 func (s *socksHandler) NewConnectionEx(ctx context.Context, conn net.Conn, source M.Socksaddr, destination M.Socksaddr, onClose N.CloseHandlerFunc) {
+	s.logger.InfoContext(ctx, fmt.Sprintf("inbound connection to %s", destination.String()))
 	targetConn, err := s.tunNet.DialContext(ctx, "tcp", destination.String())
 	if err != nil {
+		s.logger.ErrorContext(ctx, fmt.Sprintf("failed to dial outbound connection to %s: %v", destination.String(), err))
 		_ = conn.Close()
 		if onClose != nil {
 			onClose(err)
 		}
 		return
 	}
+	s.logger.InfoContext(ctx, fmt.Sprintf("outbound connection to %s", destination.String()))
 
 	// Relay TCP data between SOCKS5 client and MASQUE tunnel
 	errChan := make(chan error, 2)
@@ -112,12 +115,14 @@ func (s *socksHandler) NewPacketConnectionEx(ctx context.Context, conn N.PacketC
 			destStr := dest.String()
 			remoteConn, ok := remotes[destStr]
 			if !ok {
+				s.logger.InfoContext(ctx, fmt.Sprintf("inbound connection to %s (UDP)", destStr))
 				remoteConn, err = s.tunNet.DialContext(ctx, "udp", destStr)
 				if err != nil {
 					buffer.Release()
-					s.logger.Printf("Failed to dial UDP to %s: %v", destStr, err)
+					s.logger.ErrorContext(ctx, fmt.Sprintf("Failed to dial UDP to %s: %v", destStr, err))
 					continue
 				}
+				s.logger.InfoContext(ctx, fmt.Sprintf("outbound connection to %s (UDP)", destStr))
 				remotes[destStr] = remoteConn
 
 				// Start copy loop for this remote: tunnel -> client
@@ -143,7 +148,7 @@ func (s *socksHandler) NewPacketConnectionEx(ctx context.Context, conn N.PacketC
 			_, err = remoteConn.Write(buffer.Bytes())
 			buffer.Release()
 			if err != nil {
-				s.logger.Printf("Failed to write UDP packet to %s: %v", destStr, err)
+				s.logger.ErrorContext(ctx, fmt.Sprintf("Failed to write UDP packet to %s: %v", destStr, err))
 			}
 		}
 	}()
@@ -185,6 +190,8 @@ func (s *SOCKS5Server) Start() error {
 			r := bufio.NewReader(c)
 			source := M.SocksaddrFromNet(c.RemoteAddr())
 			
+			s.cfg.Logger.Info(fmt.Sprintf("process connection from %s", source.String()))
+			
 			err := socks.HandleConnectionEx(
 				context.Background(),
 				c,
@@ -197,7 +204,7 @@ func (s *SOCKS5Server) Start() error {
 				nil,
 			)
 			if err != nil && !E.IsClosedOrCanceled(err) {
-				s.cfg.Logger.Printf("SOCKS connection error: %v", err)
+				s.cfg.Logger.Error(fmt.Sprintf("SOCKS connection error: %v", err))
 			}
 		}(conn)
 	}

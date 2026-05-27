@@ -2,14 +2,17 @@ package internal
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
 	gvisorlog "github.com/sagernet/gvisor/pkg/log"
+	"github.com/sagernet/sing/common/logger"
 )
 
 // tzStampWriter wraps an io.Writer and prepends each record with a
@@ -44,9 +47,6 @@ func (t *tzStampWriter) Write(p []byte) (int, error) {
 
 // NewTZStampWriter wraps w so every record written to it is prefixed
 // with a local timestamp plus timezone abbreviation.
-//
-// The caller is responsible for ensuring the attached logger does not
-// also emit its own date/time prefix (i.e. use flags = 0).
 func NewTZStampWriter(w io.Writer) io.Writer {
 	return &tzStampWriter{w: w}
 }
@@ -102,3 +102,141 @@ func InstallDefaultLogTZStamp() {
 	log.SetOutput(w)
 	gvisorlog.SetTarget(&gvisorlog.Writer{Next: w})
 }
+
+// Level represents the log severity level
+type Level int
+
+const (
+	LevelTrace Level = iota
+	LevelDebug
+	LevelInfo
+	LevelWarn
+	LevelError
+	LevelFatal
+	LevelPanic
+)
+
+// ParseLevel converts a string into a Level representation
+func ParseLevel(level string) Level {
+	switch strings.ToLower(level) {
+	case "trace":
+		return LevelTrace
+	case "debug":
+		return LevelDebug
+	case "info":
+		return LevelInfo
+	case "warn", "warning":
+		return LevelWarn
+	case "error":
+		return LevelError
+	case "fatal":
+		return LevelFatal
+	case "panic":
+		return LevelPanic
+	default:
+		return LevelInfo
+	}
+}
+
+// FormatLevel converts a Level into its string representation
+func FormatLevel(level Level) string {
+	switch level {
+	case LevelTrace:
+		return "TRACE"
+	case LevelDebug:
+		return "DEBUG"
+	case LevelInfo:
+		return "INFO"
+	case LevelWarn:
+		return "WARN"
+	case LevelError:
+		return "ERROR"
+	case LevelFatal:
+		return "FATAL"
+	case LevelPanic:
+		return "PANIC"
+	default:
+		return "INFO"
+	}
+}
+
+var (
+	currentLogLevel Level = LevelInfo
+)
+
+// SetLogLevel updates the active global log filtering level
+func SetLogLevel(level Level) {
+	currentLogLevel = level
+}
+
+type appLogger struct {
+	tag string
+}
+
+// NewLogger creates a new logger.ContextLogger with the given tag
+func NewLogger(tag string) logger.ContextLogger {
+	return &appLogger{tag: tag}
+}
+
+func (l *appLogger) log(level Level, ctx context.Context, args ...any) {
+	if level < currentLogLevel {
+		return
+	}
+
+	w := GetLogWriter()
+	stamp := time.Now().Format("2006/01/02 15:04:05 MST ")
+
+	var msg string
+	if len(args) == 1 {
+		msg = fmt.Sprint(args[0])
+	} else {
+		msg = fmt.Sprint(args...)
+	}
+
+	levelStr := FormatLevel(level)
+	var output string
+	if l.tag != "" {
+		output = fmt.Sprintf("%s[%s] %s: %s\n", stamp, levelStr, l.tag, msg)
+	} else {
+		output = fmt.Sprintf("%s[%s] %s\n", stamp, levelStr, msg)
+	}
+
+	_, _ = w.Write([]byte(output))
+
+	if level == LevelPanic {
+		panic(msg)
+	} else if level == LevelFatal {
+		os.Exit(1)
+	}
+}
+
+// Drop-in compatibility with standard *log.Logger
+func (l *appLogger) Printf(format string, v ...any) {
+	l.log(LevelInfo, nil, fmt.Sprintf(format, v...))
+}
+
+func (l *appLogger) Println(v ...any) {
+	l.log(LevelInfo, nil, v...)
+}
+
+func (l *appLogger) Print(v ...any) {
+	l.log(LevelInfo, nil, v...)
+}
+
+// Trace logs trace args
+func (l *appLogger) Trace(args ...any) { l.log(LevelTrace, nil, args...) }
+func (l *appLogger) Debug(args ...any) { l.log(LevelDebug, nil, args...) }
+func (l *appLogger) Info(args ...any)  { l.log(LevelInfo, nil, args...) }
+func (l *appLogger) Warn(args ...any)  { l.log(LevelWarn, nil, args...) }
+func (l *appLogger) Error(args ...any) { l.log(LevelError, nil, args...) }
+func (l *appLogger) Fatal(args ...any) { l.log(LevelFatal, nil, args...) }
+func (l *appLogger) Panic(args ...any) { l.log(LevelPanic, nil, args...) }
+
+// TraceContext logs trace args with context
+func (l *appLogger) TraceContext(ctx context.Context, args ...any) { l.log(LevelTrace, ctx, args...) }
+func (l *appLogger) DebugContext(ctx context.Context, args ...any) { l.log(LevelDebug, ctx, args...) }
+func (l *appLogger) InfoContext(ctx context.Context, args ...any)  { l.log(LevelInfo, ctx, args...) }
+func (l *appLogger) WarnContext(ctx context.Context, args ...any)  { l.log(LevelWarn, ctx, args...) }
+func (l *appLogger) ErrorContext(ctx context.Context, args ...any) { l.log(LevelError, ctx, args...) }
+func (l *appLogger) FatalContext(ctx context.Context, args ...any) { l.log(LevelFatal, ctx, args...) }
+func (l *appLogger) PanicContext(ctx context.Context, args ...any) { l.log(LevelPanic, ctx, args...) }
