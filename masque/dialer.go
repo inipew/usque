@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"net"
 
-	"github.com/quic-go/quic-go"
+	"github.com/sagernet/quic-go"
 )
 
 // DialContextFunc matches SagerNet / sing-box outbound TCP dialers

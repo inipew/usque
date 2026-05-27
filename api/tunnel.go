@@ -10,9 +10,11 @@ import (
 	"sync"
 	"time"
 
-	connectip "github.com/Diniboy1123/connect-ip-go"
-	"github.com/Diniboy1123/usque/internal"
-	"github.com/Diniboy1123/usque/masque"
+	connectip "github.com/inipew/connect-ip-go"
+	"github.com/inipew/usque/internal"
+	"github.com/inipew/usque/masque"
+	M "github.com/sagernet/sing/common/metadata"
+	"github.com/sagernet/sing/common/network"
 	"golang.zx2c4.com/wireguard/tun"
 )
 
@@ -226,6 +228,12 @@ func MaintainTunnel(ctx context.Context, cfg MaintainTunnelConfig) {
 			ConnectURI: internal.ConnectURI,
 			Endpoint:   cfg.Endpoint,
 			UseHTTP2:   cfg.UseHTTP2,
+			DialContext: func(ctx context.Context, networkStr, addr string) (net.Conn, error) {
+				return network.SystemDialer.DialContext(ctx, networkStr, M.ParseSocksaddr(addr))
+			},
+			ListenPacket: func(ctx context.Context, networkStr, addr string) (net.PacketConn, error) {
+				return network.SystemDialer.ListenPacket(ctx, M.ParseSocksaddr(addr))
+			},
 		})
 		if err != nil {
 			log.Printf("Failed to connect tunnel: %v", err)

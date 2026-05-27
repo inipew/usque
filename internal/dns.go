@@ -7,7 +7,7 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/Diniboy1123/usque/internal/netstack"
+	"github.com/inipew/usque/internal/netstack"
 )
 
 // TunnelDNSResolver implements a DNS resolver that uses the provided DNS servers

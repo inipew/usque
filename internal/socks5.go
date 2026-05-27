@@ -8,7 +8,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/Diniboy1123/usque/internal/netstack"
+	"github.com/inipew/usque/internal/netstack"
 	"github.com/sagernet/sing/common/auth"
 	"github.com/sagernet/sing/common/buf"
 	E "github.com/sagernet/sing/common/exceptions"
