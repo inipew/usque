@@ -14,6 +14,7 @@ import (
 	"github.com/Diniboy1123/usque/config"
 	"github.com/Diniboy1123/usque/internal"
 	"github.com/Diniboy1123/usque/internal/netstack"
+	"github.com/Diniboy1123/usque/masque"
 
 	"github.com/sagernet/sing-tun"
 )
@@ -139,7 +140,7 @@ func bootstrapTunnel(useHTTP2, useIPv6, insecure bool, connectPort int, sni stri
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to generate cert: %w", err)
 	}
-	tlsConfig, err := api.PrepareTlsConfig(privKey, peerPubKey, cert, sni, insecure)
+	tlsConfig, err := masque.PrepareTlsConfig(privKey, peerPubKey, cert, sni, insecure)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to prepare TLS config: %w", err)
 	}

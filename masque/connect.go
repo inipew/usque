@@ -1,4 +1,4 @@
-package api
+package masque
 
 import (
 	"context"
@@ -21,17 +21,6 @@ import (
 
 // PrepareTlsConfig creates a TLS configuration using the provided certificate and SNI (Server Name Indication).
 // It also verifies the peer's public key against the provided public key.
-//
-// Parameters:
-//   - privKey: *ecdsa.PrivateKey - The private key to use for TLS authentication.
-//   - peerPubKey: *ecdsa.PublicKey - The endpoint's public key to pin to.
-//   - cert: [][]byte - The certificate chain to use for TLS authentication.
-//   - sni: string - The Server Name Indication (SNI) to use.
-//   - insecure: bool - When true, skip endpoint public key pinning.
-//
-// Returns:
-//   - *tls.Config: A TLS configuration for secure communication.
-//   - error: An error if TLS setup fails.
 func PrepareTlsConfig(privKey *ecdsa.PrivateKey, peerPubKey *ecdsa.PublicKey, cert [][]byte, sni string, insecure bool) (*tls.Config, error) {
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{
@@ -44,14 +33,6 @@ func PrepareTlsConfig(privKey *ecdsa.PrivateKey, peerPubKey *ecdsa.PublicKey, ce
 		NextProtos: []string{http3.NextProtoH3},
 		// WARN: SNI is usually not for the endpoint, so we must skip verification
 		InsecureSkipVerify: true,
-		// To avoid the Hello Retry Requests you would uncomment this, but I prefer to keep Go defaults, maybe
-		// Cloudflare adds support for more curves in the future and I don't want to hardcode it here
-		// NOTE: If I add more than one, Go will still use one share it picks and it was never P-256 for me
-		// so kept it doing HRRs for now.
-		// I couldn't get the official client to work with HTTP/2, so couldn't check its behavior.
-		/*CurvePreferences: []tls.CurveID{
-			tls.CurveP256,
-		},*/
 	}
 
 	if !insecure {
@@ -68,16 +49,11 @@ func PrepareTlsConfig(privKey *ecdsa.PrivateKey, peerPubKey *ecdsa.PublicKey, ce
 
 			if _, ok := cert.PublicKey.(*ecdsa.PublicKey); !ok {
 				// we only support ECDSA
-				// TODO: don't hardcode cert type in the future
-				// as backend can start using different cert types
 				return x509.ErrUnsupportedAlgorithm
 			}
 
 			if !cert.PublicKey.(*ecdsa.PublicKey).Equal(peerPubKey) {
-				// reason is incorrect, but the best I could figure
-				// detail explains the actual reason
-
-				//10 is NoValidChains, but we support go1.22 where it's not defined
+				//10 is NoValidChains
 				return x509.CertificateInvalidError{Cert: cert, Reason: 10, Detail: "remote endpoint has a different public key than what we trust in config.json"}
 			}
 
@@ -88,42 +64,25 @@ func PrepareTlsConfig(privKey *ecdsa.PrivateKey, peerPubKey *ecdsa.PublicKey, ce
 	return tlsConfig, nil
 }
 
-// ConnectTunnel establishes a Connect-IP tunnel with the provided endpoint.
-// When useHTTP2 is false it dials over QUIC/HTTP3; when true it dials over TCP/HTTP2.
-// Requires modified connect-ip-go for now to support Cloudflare's non RFC compliant implementation.
-//
-// Parameters:
-//   - ctx: context.Context - The connection context.
-//   - tlsConfig: *tls.Config - The TLS configuration for secure communication.
-//   - quicConfig: *quic.Config - The QUIC configuration settings (ignored in HTTP/2 mode).
-//   - connectUri: string - The URI template for the Connect-IP request.
-//   - endpoint: net.Addr - The remote endpoint (*net.UDPAddr for HTTP/3, *net.TCPAddr for HTTP/2).
-//   - useHTTP2: bool - When true, connect over TCP+TLS/HTTP2 instead of QUIC/HTTP3.
-//
-// Returns:
-//   - *net.UDPConn: The UDP connection used for the QUIC session (nil in HTTP/2 mode).
-//   - *http3.Transport: The HTTP/3 transport (nil in HTTP/2 mode).
-//   - *connectip.Conn: The Connect-IP connection instance.
-//   - *http.Response: The response from the Connect-IP handshake.
-//   - error: An error if the connection setup fails.
-func ConnectTunnel(ctx context.Context, tlsConfig *tls.Config, quicConfig *quic.Config, connectUri string, endpoint net.Addr, useHTTP2 bool) (*net.UDPConn, *http3.Transport, *connectip.Conn, *http.Response, error) {
-	template := uritemplate.MustNew(connectUri)
+// ConnectTunnel establishes a Connect-IP tunnel with the provided configuration.
+// When UseHTTP2 is false it dials over QUIC/HTTP3; when true it dials over TCP/HTTP2.
+func ConnectTunnel(ctx context.Context, cfg Config) (net.PacketConn, *http3.Transport, *connectip.Conn, *http.Response, error) {
+	template := uritemplate.MustNew(cfg.ConnectURI)
 	additionalHeaders := http.Header{
 		"User-Agent": []string{""},
 	}
 
-	if useHTTP2 {
-		h2Endpoint, ok := endpoint.(*net.TCPAddr)
+	if cfg.UseHTTP2 {
+		h2Endpoint, ok := cfg.Endpoint.(*net.TCPAddr)
 		if !ok || h2Endpoint == nil {
 			return nil, nil, nil, nil, errors.New("missing HTTP/2 TCP endpoint")
 		}
 
 		h2Headers := additionalHeaders.Clone()
 		h2Headers.Set("cf-connect-proto", "cf-connect-ip")
-		// TODO: support PQC
 		h2Headers.Set("pq-enabled", "false")
 
-		h2Client, err := newHTTP2Client(tlsConfig, h2Endpoint, connectUri)
+		h2Client, err := newHTTP2Client(cfg, cfg.TLSConfig, h2Endpoint, cfg.ConnectURI)
 		if err != nil {
 			return nil, nil, nil, nil, fmt.Errorf("failed to create HTTP/2 client: %w", err)
 		}
@@ -138,46 +97,47 @@ func ConnectTunnel(ctx context.Context, tlsConfig *tls.Config, quicConfig *quic.
 		return nil, nil, ipConn, rsp, nil
 	}
 
-	quicEndpoint, ok := endpoint.(*net.UDPAddr)
+	quicEndpoint, ok := cfg.Endpoint.(*net.UDPAddr)
 	if !ok || quicEndpoint == nil {
 		return nil, nil, nil, nil, errors.New("missing HTTP/3 UDP endpoint")
 	}
 
-	var udpConn *net.UDPConn
+	var packetConn net.PacketConn
 	var err error
-	if quicEndpoint.IP.To4() == nil {
-		udpConn, err = net.ListenUDP("udp", &net.UDPAddr{
-			IP:   net.IPv6zero,
-			Port: 0,
-		})
+	if cfg.ListenPacket != nil {
+		packetConn, err = cfg.ListenPacket(ctx, "udp", quicEndpoint.String())
 	} else {
-		udpConn, err = net.ListenUDP("udp", &net.UDPAddr{
-			IP:   net.IPv4zero,
-			Port: 0,
-		})
+		if quicEndpoint.IP.To4() == nil {
+			packetConn, err = net.ListenUDP("udp", &net.UDPAddr{
+				IP:   net.IPv6zero,
+				Port: 0,
+			})
+		} else {
+			packetConn, err = net.ListenUDP("udp", &net.UDPAddr{
+				IP:   net.IPv4zero,
+				Port: 0,
+			})
+		}
 	}
 	if err != nil {
-		return udpConn, nil, nil, nil, err
+		return packetConn, nil, nil, nil, err
 	}
 
 	conn, err := quic.Dial(
 		ctx,
-		udpConn,
+		packetConn,
 		quicEndpoint,
-		tlsConfig,
-		quicConfig,
+		cfg.TLSConfig,
+		cfg.QuicConfig,
 	)
 	if err != nil {
-		return udpConn, nil, nil, nil, err
+		return packetConn, nil, nil, nil, err
 	}
 
 	tr := &http3.Transport{
 		EnableDatagrams: true,
 		AdditionalSettings: map[uint64]uint64{
-			// official client still sends this out as well, even though
-			// it's deprecated, see https://datatracker.ietf.org/doc/draft-ietf-masque-h3-datagram/00/
 			// SETTINGS_H3_DATAGRAM_00 = 0x0000000000000276
-			// https://github.com/cloudflare/quiche/blob/7c66757dbc55b8d0c3653d4b345c6785a181f0b7/quiche/src/h3/frame.rs#L46
 			0x276: 1,
 		},
 		DisableCompression: true,
@@ -189,17 +149,17 @@ func ConnectTunnel(ctx context.Context, tlsConfig *tls.Config, quicConfig *quic.
 		_ = tr.Close()
 		_ = conn.CloseWithError(0, "connect-ip dial failed")
 		if strings.Contains(err.Error(), "tls: access denied") {
-			return udpConn, nil, nil, nil, errors.New("login failed! Please double-check if your tls key and cert is enrolled in the Cloudflare Access service")
+			return packetConn, nil, nil, nil, errors.New("login failed! Please double-check if your tls key and cert is enrolled in the Cloudflare Access service")
 		}
-		return udpConn, nil, nil, nil, fmt.Errorf("failed to dial connect-ip: %w", err)
+		return packetConn, nil, nil, nil, fmt.Errorf("failed to dial connect-ip: %w", err)
 	}
 
-	return udpConn, tr, ipConn, rsp, nil
+	return packetConn, tr, ipConn, rsp, nil
 }
 
 // newHTTP2Client builds an HTTP client for CONNECT-IP over HTTP/2.
 // It honors proxy environment variables and pins dialing to the selected endpoint.
-func newHTTP2Client(baseTLSConfig *tls.Config, endpoint *net.TCPAddr, connectURI string) (*http.Client, error) {
+func newHTTP2Client(cfg Config, baseTLSConfig *tls.Config, endpoint *net.TCPAddr, connectURI string) (*http.Client, error) {
 	if endpoint == nil {
 		return nil, errors.New("missing HTTP/2 endpoint")
 	}
@@ -217,8 +177,14 @@ func newHTTP2Client(baseTLSConfig *tls.Config, endpoint *net.TCPAddr, connectURI
 	if proxyURL == nil {
 		transport := &http2.Transport{
 			DialTLSContext: func(ctx context.Context, network, _ string, _ *tls.Config) (net.Conn, error) {
-				dialer := &net.Dialer{}
-				conn, err := dialer.DialContext(ctx, network, endpoint.String())
+				var conn net.Conn
+				var err error
+				if cfg.DialContext != nil {
+					conn, err = cfg.DialContext(ctx, network, endpoint.String())
+				} else {
+					dialer := &net.Dialer{}
+					conn, err = dialer.DialContext(ctx, network, endpoint.String())
+				}
 				if err != nil {
 					return nil, err
 				}
@@ -247,6 +213,9 @@ func newHTTP2Client(baseTLSConfig *tls.Config, endpoint *net.TCPAddr, connectURI
 			if addr == originAuthority {
 				addr = endpoint.String()
 			}
+			if cfg.DialContext != nil {
+				return cfg.DialContext(ctx, network, addr)
+			}
 			return dialer.DialContext(ctx, network, addr)
 		},
 		DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
@@ -258,7 +227,13 @@ func newHTTP2Client(baseTLSConfig *tls.Config, endpoint *net.TCPAddr, connectURI
 				dialAddr = endpoint.String()
 			}
 
-			conn, err := dialer.DialContext(ctx, network, dialAddr)
+			var conn net.Conn
+			var err error
+			if cfg.DialContext != nil {
+				conn, err = cfg.DialContext(ctx, network, dialAddr)
+			} else {
+				conn, err = dialer.DialContext(ctx, network, dialAddr)
+			}
 			if err != nil {
 				return nil, err
 			}

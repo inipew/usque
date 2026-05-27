@@ -9,23 +9,12 @@ import (
 	"github.com/Diniboy1123/usque/api"
 	"github.com/Diniboy1123/usque/config"
 	"github.com/Diniboy1123/usque/internal"
+	"github.com/Diniboy1123/usque/masque"
 	"github.com/spf13/cobra"
 
 	"github.com/sagernet/sing-tun"
 )
 
-type singTunDevice struct {
-	tunDev tun.Tun
-}
-
-func (s *singTunDevice) ReadPacket(buf []byte) (int, error) {
-	return s.tunDev.Read(buf)
-}
-
-func (s *singTunDevice) WritePacket(pkt []byte) error {
-	_, err := s.tunDev.Write(pkt)
-	return err
-}
 
 var transparentTunCmd = &cobra.Command{
 	Use:   "transparenttun",
@@ -66,7 +55,7 @@ var transparentTunCmd = &cobra.Command{
 			return
 		}
 
-		tlsConfig, err := api.PrepareTlsConfig(privKey, peerPubKey, cert, sni, insecure)
+		tlsConfig, err := masque.PrepareTlsConfig(privKey, peerPubKey, cert, sni, insecure)
 		if err != nil {
 			cmd.Printf("Failed to prepare TLS config: %v\n", err)
 			return

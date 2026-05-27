@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Diniboy1123/usque/api"
 	"github.com/Diniboy1123/usque/config"
 	"github.com/Diniboy1123/usque/internal"
 	"github.com/Diniboy1123/usque/models"
+	"github.com/Diniboy1123/usque/warp"
 	"github.com/spf13/cobra"
 )
 
@@ -77,7 +77,7 @@ var enrollCmd = &cobra.Command{
 			}
 		}
 
-		updatedAccountData, apiErr, err := api.EnrollKey(accountData, publicKey, deviceName)
+		updatedAccountData, apiErr, err := warp.EnrollKey(accountData, publicKey, deviceName)
 		if err != nil {
 			if apiErr != nil && apiErr.HasErrorMessage(models.InvalidPublicKey) {
 				fmt.Print("Invalid public key detected. Regenerate key? (y/n): ")
@@ -95,7 +95,7 @@ var enrollCmd = &cobra.Command{
 					}
 
 					log.Println("Re-enrolling device key with new key pair...")
-					updatedAccountData, apiErr, err = api.EnrollKey(accountData, publicKey, deviceName)
+					updatedAccountData, apiErr, err = warp.EnrollKey(accountData, publicKey, deviceName)
 					if err != nil {
 						if apiErr != nil {
 							log.Fatalf("Failed to enroll key: %v (API errors: %s)", err, apiErr.ErrorsAsString("; "))

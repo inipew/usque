@@ -1,4 +1,4 @@
-package api
+package warp
 
 import (
 	"bytes"
@@ -9,9 +9,29 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Diniboy1123/usque/internal"
 	"github.com/Diniboy1123/usque/models"
 )
+
+const (
+	ApiUrl        = "https://api.cloudflareclient.com"
+	ApiVersion    = "v0a4471"
+	KeyTypeWg     = "curve25519"
+	TunTypeWg     = "wireguard"
+	KeyTypeMasque = "secp256r1"
+	TunTypeMasque = "masque"
+)
+
+var Headers = map[string]string{
+	"User-Agent":        "WARP for Android",
+	"CF-Client-Version": "a-6.35-4471",
+	"Content-Type":      "application/json; charset=UTF-8",
+	"Connection":        "Keep-Alive",
+}
+
+// TimeAsCfString formats a given time.Time into a Cloudflare-compatible string format.
+func TimeAsCfString(t time.Time) string {
+	return t.Format("2006-01-02T15:04:05.000-07:00")
+}
 
 // Register creates a new user account by registering a WireGuard public key and generating a random Android-like device identifier.
 // The WireGuard private key isn't stored anywhere, therefore it won't be usable. It's sole purpose is to mimic the Android app's registration process.
@@ -27,19 +47,12 @@ import (
 // Returns:
 //   - models.AccountData: The account data returned from the registration process.
 //   - error:              An error if registration fails at any step.
-//
-// Example:
-//
-//	account, err := Register("PC", "en-US", "", false)
-//	if err != nil {
-//	    log.Fatalf("Registration failed: %v", err)
-//	}
 func Register(model, locale, jwt string, acceptTos bool) (models.AccountData, error) {
-	wgKey, err := internal.GenerateRandomWgPubkey()
+	wgKey, err := GenerateRandomWgPubkey()
 	if err != nil {
 		return models.AccountData{}, fmt.Errorf("failed to generate wg key: %v", err)
 	}
-	serial, err := internal.GenerateRandomAndroidSerial()
+	serial, err := GenerateRandomAndroidSerial()
 	if err != nil {
 		return models.AccountData{}, fmt.Errorf("failed to generate serial: %v", err)
 	}
@@ -59,12 +72,12 @@ func Register(model, locale, jwt string, acceptTos bool) (models.AccountData, er
 		Key:       wgKey,
 		InstallID: "",
 		FcmToken:  "",
-		Tos:       internal.TimeAsCfString(time.Now()),
+		Tos:       TimeAsCfString(time.Now()),
 		Model:     model,
 		Serial:    serial,
 		OsVersion: "",
-		KeyType:   internal.KeyTypeWg,
-		TunType:   internal.TunTypeWg,
+		KeyType:   KeyTypeWg,
+		TunType:   TunTypeWg,
 		Locale:    locale,
 	}
 
@@ -73,12 +86,12 @@ func Register(model, locale, jwt string, acceptTos bool) (models.AccountData, er
 		return models.AccountData{}, fmt.Errorf("failed to marshal json: %v", err)
 	}
 
-	req, err := http.NewRequest("POST", internal.ApiUrl+"/"+internal.ApiVersion+"/reg", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", ApiUrl+"/"+ApiVersion+"/reg", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return models.AccountData{}, fmt.Errorf("failed to create request: %v", err)
 	}
 
-	for k, v := range internal.Headers {
+	for k, v := range Headers {
 		req.Header.Set(k, v)
 	}
 
@@ -116,18 +129,11 @@ func Register(model, locale, jwt string, acceptTos bool) (models.AccountData, er
 // Returns:
 //   - models.AccountData: The updated account data.
 //   - error:              An error if the update process fails.
-//
-// Example:
-//
-//	updatedAccount, apiErr, err := EnrollKey(account, pubKey, "PC")
-//	if err != nil {
-//	    log.Fatalf("Key enrollment failed: %v", err)
-//	}
 func EnrollKey(accountData models.AccountData, pubKey []byte, deviceName string) (models.AccountData, *models.APIError, error) {
 	deviceUpdate := models.DeviceUpdate{
 		Key:     base64.StdEncoding.EncodeToString(pubKey),
-		KeyType: internal.KeyTypeMasque,
-		TunType: internal.TunTypeMasque,
+		KeyType: KeyTypeMasque,
+		TunType: TunTypeMasque,
 	}
 
 	if deviceName != "" {
@@ -139,12 +145,12 @@ func EnrollKey(accountData models.AccountData, pubKey []byte, deviceName string)
 		return models.AccountData{}, nil, fmt.Errorf("failed to marshal json: %v", err)
 	}
 
-	req, err := http.NewRequest("PATCH", internal.ApiUrl+"/"+internal.ApiVersion+"/reg/"+accountData.ID, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("PATCH", ApiUrl+"/"+ApiVersion+"/reg/"+accountData.ID, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return models.AccountData{}, nil, fmt.Errorf("failed to create request: %v", err)
 	}
 
-	for k, v := range internal.Headers {
+	for k, v := range Headers {
 		req.Header.Set(k, v)
 	}
 	req.Header.Set("Authorization", "Bearer "+accountData.Token)

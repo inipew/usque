@@ -31,3 +31,4 @@ usque.exe
 dist/
 
 *.log
+.kiro

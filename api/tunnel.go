@@ -12,7 +12,7 @@ import (
 
 	connectip "github.com/Diniboy1123/connect-ip-go"
 	"github.com/Diniboy1123/usque/internal"
-	"github.com/songgao/water"
+	"github.com/Diniboy1123/usque/masque"
 	"golang.zx2c4.com/wireguard/tun"
 )
 
@@ -119,30 +119,6 @@ func NewNetstackAdapter(dev tun.Device) TunnelDevice {
 	}
 }
 
-// WaterAdapter wraps a *water.Interface so it satisfies TunnelDevice.
-type WaterAdapter struct {
-	iface *water.Interface
-}
-
-func (w *WaterAdapter) ReadPacket(buf []byte) (int, error) {
-	n, err := w.iface.Read(buf)
-	if err != nil {
-		return 0, err
-	}
-
-	return n, nil
-}
-
-func (w *WaterAdapter) WritePacket(pkt []byte) error {
-	_, err := w.iface.Write(pkt)
-	return err
-}
-
-// NewWaterAdapter creates a new WaterAdapter.
-func NewWaterAdapter(iface *water.Interface) TunnelDevice {
-	return &WaterAdapter{iface: iface}
-}
-
 // pumpShutdownGrace bounds how long the supervisor waits for both forwarding
 // pumps to exit after an error before spawning a fresh pair. A device-side
 // pump may still be parked in a blocking TUN read during this window; the
@@ -244,14 +220,13 @@ func MaintainTunnel(ctx context.Context, cfg MaintainTunnelConfig) {
 		}
 
 		log.Printf("Establishing MASQUE connection to %s", cfg.Endpoint)
-		udpConn, tr, ipConn, rsp, err := ConnectTunnel(
-			ctx,
-			cfg.TLSConfig,
-			internal.DefaultQuicConfig(cfg.KeepalivePeriod, cfg.InitialPacketSize),
-			internal.ConnectURI,
-			cfg.Endpoint,
-			cfg.UseHTTP2,
-		)
+		udpConn, tr, ipConn, rsp, err := masque.ConnectTunnel(ctx, masque.Config{
+			TLSConfig:  cfg.TLSConfig,
+			QuicConfig: internal.DefaultQuicConfig(cfg.KeepalivePeriod, cfg.InitialPacketSize),
+			ConnectURI: internal.ConnectURI,
+			Endpoint:   cfg.Endpoint,
+			UseHTTP2:   cfg.UseHTTP2,
+		})
 		if err != nil {
 			log.Printf("Failed to connect tunnel: %v", err)
 			if ipConn != nil {

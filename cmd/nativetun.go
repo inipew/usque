@@ -3,21 +3,73 @@ package cmd
 import (
 	"context"
 	"log"
+	"net/netip"
 	"time"
 
 	"github.com/Diniboy1123/usque/api"
 	"github.com/Diniboy1123/usque/config"
 	"github.com/Diniboy1123/usque/internal"
+	"github.com/Diniboy1123/usque/masque"
 	"github.com/spf13/cobra"
+
+	"github.com/sagernet/sing-tun"
 )
 
 type tunDevice struct {
 	name     string
 	mtu      int
-	iproute2 bool
 	ipv4     bool
 	ipv6     bool
-	persist  bool
+}
+
+type singTunDevice struct {
+	tunDev tun.Tun
+}
+
+func (s *singTunDevice) ReadPacket(buf []byte) (int, error) {
+	return s.tunDev.Read(buf)
+}
+
+func (s *singTunDevice) WritePacket(pkt []byte) error {
+	_, err := s.tunDev.Write(pkt)
+	return err
+}
+
+var longDescription = "Expose Warp as a native TUN device that accepts any IP traffic. " +
+	"Requires administrator/root privileges."
+
+func (t *tunDevice) create() (api.TunnelDevice, error) {
+	if t.name == "" {
+		t.name = "usque"
+	}
+
+	opts := tun.Options{
+		Name:        t.name,
+		MTU:         uint32(t.mtu),
+		AutoRoute:   false,
+		StrictRoute: false,
+	}
+
+	if t.ipv4 {
+		ip4, err := netip.ParseAddr(config.AppConfig.IPv4)
+		if err == nil {
+			opts.Inet4Address = []netip.Prefix{netip.PrefixFrom(ip4, 32)}
+		}
+	}
+
+	if t.ipv6 {
+		ip6, err := netip.ParseAddr(config.AppConfig.IPv6)
+		if err == nil {
+			opts.Inet6Address = []netip.Prefix{netip.PrefixFrom(ip6, 128)}
+		}
+	}
+
+	tunDev, err := tun.New(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return &singTunDevice{tunDev: tunDev}, nil
 }
 
 var nativeTunCmd = &cobra.Command{
@@ -59,7 +111,7 @@ var nativeTunCmd = &cobra.Command{
 			return
 		}
 
-		tlsConfig, err := api.PrepareTlsConfig(privKey, peerPubKey, cert, sni, insecure)
+		tlsConfig, err := masque.PrepareTlsConfig(privKey, peerPubKey, cert, sni, insecure)
 		if err != nil {
 			cmd.Printf("Failed to prepare TLS config: %v\n", err)
 			return
@@ -129,12 +181,6 @@ var nativeTunCmd = &cobra.Command{
 			log.Println("Warning: MTU is not the default 1280. This is not supported. Packet loss and other issues may occur.")
 		}
 
-		setIproute2, err := cmd.Flags().GetBool("no-iproute2")
-		if err != nil {
-			cmd.Printf("Failed to get no set address: %v\n", err)
-			return
-		}
-
 		reconnectDelay, err := cmd.Flags().GetDuration("reconnect-delay")
 		if err != nil {
 			cmd.Printf("Failed to get reconnect delay: %v\n", err)
@@ -161,12 +207,6 @@ var nativeTunCmd = &cobra.Command{
 			}
 		}
 
-		persist, err := cmd.Flags().GetBool("persist")
-		if err != nil {
-			cmd.Printf("Failed to get persist flag: %v\n", err)
-			return
-		}
-
 		onConnect, err := cmd.Flags().GetString("on-connect")
 		if err != nil {
 			cmd.Printf("Failed to get on-connect flag: %v\n", err)
@@ -180,12 +220,10 @@ var nativeTunCmd = &cobra.Command{
 		}
 
 		t := &tunDevice{
-			name:     interfaceName,
-			mtu:      mtu,
-			iproute2: !setIproute2,
-			ipv4:     !tunnelIPv4,
-			ipv6:     !tunnelIPv6,
-			persist:  persist,
+			name: interfaceName,
+			mtu:  mtu,
+			ipv4: !tunnelIPv4,
+			ipv6: !tunnelIPv6,
 		}
 
 		dev, err := t.create()
@@ -233,13 +271,11 @@ func init() {
 	nativeTunCmd.Flags().DurationP("keepalive-period", "k", 30*time.Second, "Keepalive period for MASQUE connection")
 	nativeTunCmd.Flags().IntP("mtu", "m", 1280, "MTU for MASQUE connection")
 	nativeTunCmd.Flags().Uint16P("initial-packet-size", "i", 0, "Custom initial packet size for MASQUE connection (default: auto with PMTU discovery)")
-	nativeTunCmd.Flags().BoolP("no-iproute2", "I", false, "Linux only: Do not set up IP addresses and do not set the link up")
 	nativeTunCmd.Flags().DurationP("reconnect-delay", "r", 1*time.Second, "Delay between reconnect attempts")
 	nativeTunCmd.Flags().Bool("always-reconnect", false, "Always reconnect after tunnel loss, even when idle")
 	nativeTunCmd.Flags().Bool("http2", false, "Use HTTP/2 over TCP+TLS instead of HTTP/3 over QUIC."+config.EndpointHelpSuffixH2)
 	nativeTunCmd.Flags().Bool("insecure", false, "Disable endpoint certificate pinning and trust any certificate")
 	nativeTunCmd.Flags().StringP("interface-name", "n", "", "Custom interface name for the TUN interface")
-	nativeTunCmd.Flags().Bool("persist", false, "Linux only: Keep the TUN interface after exit")
 	nativeTunCmd.Flags().String("on-connect", "", "Path to an executable to run after each successful tunnel connect (no args; context via USQUE_* env vars)")
 	nativeTunCmd.Flags().String("on-disconnect", "", "Path to an executable to run after each tunnel disconnect (no args; context via USQUE_* env vars)")
 	rootCmd.AddCommand(nativeTunCmd)

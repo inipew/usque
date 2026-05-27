@@ -13,8 +13,9 @@ import (
 	"github.com/Diniboy1123/usque/api"
 	"github.com/Diniboy1123/usque/config"
 	"github.com/Diniboy1123/usque/internal"
-	"github.com/spf13/cobra"
 	"github.com/Diniboy1123/usque/internal/netstack"
+	"github.com/Diniboy1123/usque/masque"
+	"github.com/spf13/cobra"
 )
 
 var portFwCmd = &cobra.Command{
@@ -58,7 +59,7 @@ var portFwCmd = &cobra.Command{
 			return
 		}
 
-		tlsConfig, err := api.PrepareTlsConfig(privKey, peerPubKey, cert, sni, insecure)
+		tlsConfig, err := masque.PrepareTlsConfig(privKey, peerPubKey, cert, sni, insecure)
 		if err != nil {
 			cmd.Printf("Failed to prepare TLS config: %v\n", err)
 			return

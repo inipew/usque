@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Diniboy1123/usque/api"
 	"github.com/Diniboy1123/usque/config"
 	"github.com/Diniboy1123/usque/internal"
+	"github.com/Diniboy1123/usque/warp"
 	"github.com/spf13/cobra"
 )
 
@@ -67,7 +67,7 @@ var registerCmd = &cobra.Command{
 			log.Fatalf("Failed to get accept-tos flag: %v", err)
 		}
 
-		accountData, err := api.Register(model, locale, jwt, acceptTos)
+		accountData, err := warp.Register(model, locale, jwt, acceptTos)
 		if err != nil {
 			log.Fatalf("Failed to register: %v", err)
 		}
@@ -79,7 +79,7 @@ var registerCmd = &cobra.Command{
 
 		log.Printf("Enrolling device key...")
 
-		updatedAccountData, apiErr, err := api.EnrollKey(accountData, pubKey, deviceName)
+		updatedAccountData, apiErr, err := warp.EnrollKey(accountData, pubKey, deviceName)
 		if err != nil {
 			if apiErr != nil {
 				log.Fatalf("Failed to enroll key: %v (API errors: %s)", err, apiErr.ErrorsAsString("; "))
