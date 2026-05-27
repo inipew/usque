@@ -7,11 +7,11 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/Diniboy1123/usque/api"
-	"github.com/Diniboy1123/usque/config"
-	"github.com/Diniboy1123/usque/internal"
-	"github.com/Diniboy1123/usque/internal/netstack"
-	"github.com/Diniboy1123/usque/masque"
+	"github.com/inipew/usque/api"
+	"github.com/inipew/usque/config"
+	"github.com/inipew/usque/internal"
+	"github.com/inipew/usque/internal/netstack"
+	"github.com/inipew/usque/masque"
 	"github.com/spf13/cobra"
 )
 

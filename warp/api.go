@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Diniboy1123/usque/models"
+	"github.com/inipew/usque/models"
 )
 
 const (

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Diniboy1123/usque/cmd"
+	"github.com/inipew/usque/cmd"
 )
 
 func main() {

@@ -12,9 +12,9 @@ import (
 	"net/url"
 	"strings"
 
-	connectip "github.com/Diniboy1123/connect-ip-go"
-	"github.com/quic-go/quic-go"
-	"github.com/quic-go/quic-go/http3"
+	connectip "github.com/inipew/connect-ip-go"
+	"github.com/sagernet/quic-go"
+	"github.com/sagernet/quic-go/http3"
 	"github.com/yosida95/uritemplate/v3"
 	"golang.org/x/net/http2"
 )

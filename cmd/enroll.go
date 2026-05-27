@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Diniboy1123/usque/config"
-	"github.com/Diniboy1123/usque/internal"
-	"github.com/Diniboy1123/usque/models"
-	"github.com/Diniboy1123/usque/warp"
+	"github.com/inipew/usque/config"
+	"github.com/inipew/usque/internal"
+	"github.com/inipew/usque/models"
+	"github.com/inipew/usque/warp"
 	"github.com/spf13/cobra"
 )
 

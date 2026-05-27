@@ -3,8 +3,8 @@ package cmd
 import (
 	"log"
 
-	"github.com/Diniboy1123/usque/config"
-	"github.com/Diniboy1123/usque/internal"
+	"github.com/inipew/usque/config"
+	"github.com/inipew/usque/internal"
 	"github.com/spf13/cobra"
 )
 

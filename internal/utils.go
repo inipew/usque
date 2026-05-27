@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/quic-go/quic-go"
+	"github.com/sagernet/quic-go"
 )
 
 // PortMapping represents a network port forwarding rule.
