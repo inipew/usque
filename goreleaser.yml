@@ -16,9 +16,9 @@ builds:
       - -trimpath
     ldflags:
       - "-s -w"
-      - "-X github.com/Diniboy1123/usque/cmd.version={{.Tag}}"
-      - "-X github.com/Diniboy1123/usque/cmd.commit={{.Commit}}"
-      - "-X github.com/Diniboy1123/usque/cmd.date={{.Date}}"
+      - "-X github.com/inipew/usque/cmd.version={{.Tag}}"
+      - "-X github.com/inipew/usque/cmd.commit={{.Commit}}"
+      - "-X github.com/inipew/usque/cmd.date={{.Date}}"
   
   - id: linux-amd64
     goos:
@@ -31,9 +31,9 @@ builds:
       - -trimpath
     ldflags:
       - "-s -w"
-      - "-X github.com/Diniboy1123/usque/cmd.version={{.Tag}}"
-      - "-X github.com/Diniboy1123/usque/cmd.commit={{.Commit}}"
-      - "-X github.com/Diniboy1123/usque/cmd.date={{.Date}}"
+      - "-X github.com/inipew/usque/cmd.version={{.Tag}}"
+      - "-X github.com/inipew/usque/cmd.commit={{.Commit}}"
+      - "-X github.com/inipew/usque/cmd.date={{.Date}}"
 
   - id: linux-arm
     goos:
@@ -50,9 +50,9 @@ builds:
       - -trimpath
     ldflags:
       - "-s -w"
-      - "-X github.com/Diniboy1123/usque/cmd.version={{.Tag}}"
-      - "-X github.com/Diniboy1123/usque/cmd.commit={{.Commit}}"
-      - "-X github.com/Diniboy1123/usque/cmd.date={{.Date}}"
+      - "-X github.com/inipew/usque/cmd.version={{.Tag}}"
+      - "-X github.com/inipew/usque/cmd.commit={{.Commit}}"
+      - "-X github.com/inipew/usque/cmd.date={{.Date}}"
 
   - id: linux-arm64
     goos:
@@ -65,9 +65,9 @@ builds:
       - -trimpath
     ldflags:
       - "-s -w"
-      - "-X github.com/Diniboy1123/usque/cmd.version={{.Tag}}"
-      - "-X github.com/Diniboy1123/usque/cmd.commit={{.Commit}}"
-      - "-X github.com/Diniboy1123/usque/cmd.date={{.Date}}"
+      - "-X github.com/inipew/usque/cmd.version={{.Tag}}"
+      - "-X github.com/inipew/usque/cmd.commit={{.Commit}}"
+      - "-X github.com/inipew/usque/cmd.date={{.Date}}"
 
   - id: linux-mips
     goos:
@@ -83,9 +83,9 @@ builds:
       - -trimpath
     ldflags:
       - "-s -w"
-      - "-X github.com/Diniboy1123/usque/cmd.version={{.Tag}}"
-      - "-X github.com/Diniboy1123/usque/cmd.commit={{.Commit}}"
-      - "-X github.com/Diniboy1123/usque/cmd.date={{.Date}}"
+      - "-X github.com/inipew/usque/cmd.version={{.Tag}}"
+      - "-X github.com/inipew/usque/cmd.commit={{.Commit}}"
+      - "-X github.com/inipew/usque/cmd.date={{.Date}}"
 
   - id: windows
     goos:
@@ -99,9 +99,9 @@ builds:
       - -trimpath
     ldflags:
       - "-s -w"
-      - "-X github.com/Diniboy1123/usque/cmd.version={{.Tag}}"
-      - "-X github.com/Diniboy1123/usque/cmd.commit={{.Commit}}"
-      - "-X github.com/Diniboy1123/usque/cmd.date={{.Date}}"
+      - "-X github.com/inipew/usque/cmd.version={{.Tag}}"
+      - "-X github.com/inipew/usque/cmd.commit={{.Commit}}"
+      - "-X github.com/inipew/usque/cmd.date={{.Date}}"
 
   - id: darwin
     goos:
@@ -115,9 +115,9 @@ builds:
       - -trimpath
     ldflags:
       - "-s -w"
-      - "-X github.com/Diniboy1123/usque/cmd.version={{.Tag}}"
-      - "-X github.com/Diniboy1123/usque/cmd.commit={{.Commit}}"
-      - "-X github.com/Diniboy1123/usque/cmd.date={{.Date}}"
+      - "-X github.com/inipew/usque/cmd.version={{.Tag}}"
+      - "-X github.com/inipew/usque/cmd.commit={{.Commit}}"
+      - "-X github.com/inipew/usque/cmd.date={{.Date}}"
 
 archives:
   - formats:
@@ -132,5 +132,5 @@ checksum:
 
 release:
   github:
-    owner: Diniboy1123
+    owner: inipew
     name: usque
